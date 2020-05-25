@@ -35,10 +35,18 @@ defmodule DemoChatWeb.PostLive.Index do
 
   @impl true
   def handle_event("delete", %{"id" => id}, socket) do
-    post = Timeline.get_post!(id)
-    {:ok, _} = Timeline.delete_post(post)
+    case Timeline.get_post!(id) |> Timeline.delete_post() do
+      {:ok, _} ->
+        {:noreply,
+         socket
+         |> put_flash(:info, "Post deleted successfully")
+         |> push_redirect(to: "/posts")}
 
-    {:noreply, assign(socket, :posts, fetch_posts())}
+      {:error, _} ->
+        {:noreply,
+         socket
+         |> push_redirect(to: "/posts")}
+    end
   end
 
   @impl true
@@ -48,6 +56,10 @@ defmodule DemoChatWeb.PostLive.Index do
 
   def handle_info({:post_updated, post}, socket) do
     {:noreply, update(socket, :posts, fn posts -> [post | posts] end)}
+  end
+
+  def handle_info({:post_deleted, _post}, socket) do
+    {:noreply, redirect(socket, to: "/posts")}
   end
 
   defp fetch_posts do
